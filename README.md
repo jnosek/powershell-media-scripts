@@ -1,2 +1,2 @@
 # powershell-media-scripts
-Powershell scripts for organizing media files
+Powershell scripts for organizing and managing media files
