@@ -9,7 +9,7 @@
 [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing") 
 
 # Constants
-$fileExtensions = @("*.jpg", "*.gif", "*.bmp", "*.png")
+$fileExtensions = @("*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.png")
 $ExifTagCode_DateTimeOriginal = 0x9003
 
 # Helper Functions
