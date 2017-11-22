@@ -2,7 +2,8 @@
 (
     $SourceFolder = $(throw "-SourceFolder is required."), 
     $DestinationFolder = $(throw "-DestinationFolder is required."),
-	[switch] $UseDateModified
+    [ValidateSet("Move","UseDateModified","Skip")]
+    [System.String]$NoDatePolicy = "Move"
 )
 
 # dependencies
@@ -120,47 +121,59 @@ ForEach($file in $files)
 {
     $dateTaken = Get-DateTaken $file
 
-    # if not datetaken value, set it to the last modified time of the file
-    if(($dateTaken -eq $null) -and $UseDateModified)
-    {
-        $dateTaken = $file.LastWriteTime
-    }
-
-    # if null, move to no-date folder
+    # if null, check what user instructed to do
     if($dateTaken -eq $null)
     {
-        # TODO: handle similarly named files
-        Write-Host("! {0} -> no-date\{1}" -f $file.FullName.SubString($SourceFolder.FullName.Length), $file.Name)
-        Move-Item -Path $file -Destination $noDateFolder
-    }
-    # else move to destination and rename
-    else
-    {
-        $newYearMonthFolder = $dateTaken.ToString("yyyy-MM") + "\"
-        $newFolder = $DestinationFolder.FullName + $newYearMonthFolder
+        if($NoDatePolicy -eq "Move")
+        {
+            # TODO: handle similarly named files
+            Write-Host("! {0} -> no-date\{1}" -f $file.FullName.SubString($SourceFolder.FullName.Length), $file.Name)
+            Move-Item -Path $file -Destination $noDateFolder
 
-        $newFilenameBase = $dateTaken.ToString("yyyyMMdd-HHmmss")
+            Continue
+        }
+        elseif($NoDatePolicy -eq "UseDateModified")
+        {
+            $dateTaken = $file.LastWriteTime
+        }
+        #else it is Skip, or something invalid
+        else
+        {
+            Write-Host("! {0} -> skipped" -f $file.FullName.SubString($SourceFolder.FullName.Length))
+            Continue
+        }
+    }
+
+    # determine new destination and file name
+    
+    $newYearMonthFolder = $dateTaken.ToString("yyyy-MM") + "\"
+    $newFolder = $DestinationFolder.FullName + $newYearMonthFolder
+
+    $newFilenameBase = $dateTaken.ToString("yyyyMMdd-HHmmss")
+    $newFilename = $newFilenameBase + $file.Extension
+    $newFilePath = $newFolder + $newFilename
+
+    # TODO: check if the source and destination folders are the same and
+    # check if the current file name starts like the new file name, if so skip
+
+
+    # if folder does not exist, create it
+    if((Test-Path $newFolder) -eq $false)
+    {
+        New-Item -Path $newFolder -ItemType Directory | Out-Null
+    }
+         
+    # if a simlar file already exists
+    if(Test-Path $newFilePath)
+    {
+        $fileCount = (Get-ChildItem -Path $newFolder -Filter ($newFilenameBase + "*")).Count
+
+        $newFilenameBase = $dateTaken.ToString("yyyyMMdd-HHmmss") + "-" + $fileCount
         $newFilename = $newFilenameBase + $file.Extension
         $newFilePath = $newFolder + $newFilename
-
-        # if folder does not exist, create it
-        if((Test-Path $newFolder) -eq $false)
-        {
-            New-Item -Path $newFolder -ItemType Directory | Out-Null
-        }
-         
-        # if a simlar file already exists
-        if(Test-Path $newFilePath)
-        {
-            $fileCount = (Get-ChildItem -Path $newFolder -Filter ($newFilenameBase + "*")).Count
-
-            $newFilenameBase = $dateTaken.ToString("yyyyMMdd-HHmmss") + "-" + $fileCount
-            $newFilename = $newFilenameBase + $file.Extension
-            $newFilePath = $newFolder + $newFilename
-        }
-
-        # move the file
-        Write-Host("{0} -> {1}{2}" -f $file.FullName.SubString($SourceFolder.FullName.Length), $newYearMonthFolder, $newFilename)
-        Move-Item -Path $file -Destination $newFilePath
     }
+
+    # move the file
+    Write-Host("{0} -> {1}{2}" -f $file.FullName.SubString($SourceFolder.FullName.Length), $newYearMonthFolder, $newFilename)
+    Move-Item -Path $file -Destination $newFilePath
 }
