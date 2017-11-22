@@ -1,7 +1,8 @@
 ﻿param 
 (
     $SourceFolder = $(throw "-SourceFolder is required."), 
-    $DestinationFolder = $(throw "-DestinationFolder is required.")
+    $DestinationFolder = $(throw "-DestinationFolder is required."),
+	[switch] $UseDateModified
 )
 
 # dependencies
@@ -118,6 +119,12 @@ if($files.Count -eq 0)
 ForEach($file in $files)
 {
     $dateTaken = Get-DateTaken $file
+
+    # if not datetaken value, set it to the last modified time of the file
+    if(($dateTaken -eq $null) -and $UseDateModified)
+    {
+        $dateTaken = $file.LastWriteTime
+    }
 
     # if null, move to no-date folder
     if($dateTaken -eq $null)
