@@ -152,7 +152,7 @@ ForEach($file in $files)
         # if a simlar file already exists
         if(Test-Path $newFilePath)
         {
-            $fileCount = (Get-Item -Path $newFolder -Filter ($newFilenameBase + "*")).Count
+            $fileCount = (Get-ChildItem -Path $newFolder -Filter ($newFilenameBase + "*")).Count
 
             $newFilenameBase = $dateTaken.ToString("yyyyMMdd-HHmmss") + "-" + $fileCount
             $newFilename = $newFilenameBase + $file.Extension
