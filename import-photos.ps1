@@ -7,9 +7,12 @@ param
     [ValidateSet("Move","Copy")]
     [System.String] $Operation = "Copy",
     [System.String] $SourceDateTimeSelector = "IMG_(.*)\.jpg",
-    [System.String] $SourceDateTimeFormat = "yyyyMMdd_HHmmss",
-    [System.String] $DestinationDateTimeFormat = "yyyyMMdd-HHmmss"
+    [System.String] $SourceDateTimeFormat = "yyyyMMdd_HHmmss"
 )
+
+
+$destinationDateTimeFormat = "yyyyMMdd-HHmmss";
+$destinationRegExFormat = "[0-9]{8}-[0-9]{6}\.jpg";
 
 $failedFolder = $SourceFolder + "\Failed";
 
@@ -47,7 +50,7 @@ foreach($file in $files) {
         }
 
         # create a new filename based off the datetime object
-        $newFileName =  $dateValue.ToString([string] $DestinationDateTimeFormat) + $file.Extension;
+        $newFileName =  $dateValue.ToString([string] $destinationDateTimeFormat) + $file.Extension;
         $newFilePath = $newFilePath + "\" + $newFileName;
 
         # TODO: what if the file already exists
@@ -73,6 +76,10 @@ foreach($file in $files) {
         else {
             throw ("Unknown Operation Value: {0}" -f $Operation);
         }
+    }
+    # else, if the filename matches our destination format
+    elseif($file.Name -match $destinationRegExFormat) {
+        # skip
     }
     # else, move files that do not match to the failed folder
     else {
