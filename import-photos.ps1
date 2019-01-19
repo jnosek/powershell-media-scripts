@@ -52,10 +52,23 @@ foreach($file in $files) {
 
         # TODO: what if the file already exists
 
-        #copy file
-        Write-Host $newFilePath;
-        Copy-Item -Path $file.FullName -Destination $newFilePath;    
+        # write transaction output
+        Write-Host("{0} -> {1}" -f $file.Name, $newFilePath);
+
+        # copy file
+        if($Operation -eq "Copy") {
+            Copy-Item -Path $file.FullName -Destination $newFilePath;    
+        }
+        # move file
+        elseif($Operation -eq "Move") {
+            Move-Item -Path $file.FullName -Destination $newFilePath; 
+        }
+        # unknown operation value
+        else {
+            throw ("Unknown Operation Value: {0}" -f $Operation);
+        }
         
+        # save last selected file that was processed
         $lastFile = $file;
     }
 }
