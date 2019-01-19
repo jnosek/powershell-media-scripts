@@ -12,7 +12,7 @@ param
 
 
 $destinationDateTimeFormat = "yyyyMMdd-HHmmss";
-$destinationRegExFormat = "[0-9]{8}-[0-9]{6}\.jpg";
+$destinationRegExFormat = "[0-9]{8}-[0-9]{6}(-[0-9]*)?\.jpg";
 
 $failedFolder = $SourceFolder + "\Failed";
 
@@ -27,7 +27,7 @@ if(-not (Test-Path -Path $DestinationFolder)) {
 }
 
 # get files in folder ordered by name ascending
-$files = Get-ChildItem -Path $SourceFolder -File | Sort-Object -Property FullName;
+$files = @(Get-ChildItem -Path $SourceFolder -File | Sort-Object -Property FullName);
 
 # for each file in the folder
 foreach($file in $files) {
@@ -50,27 +50,39 @@ foreach($file in $files) {
         }
 
         # create a new filename based off the datetime object
-        $newFileName =  $dateValue.ToString([string] $destinationDateTimeFormat) + $file.Extension;
-        $newFilePath = $newFilePath + "\" + $newFileName;
+        $newFileBaseName = $dateValue.ToString([string] $destinationDateTimeFormat);
+        $newFileName = $newFileBaseName + $file.Extension;
+        $newFileFullName = $newFilePath + "\" + $newFileName;
 
-        # TODO: what if the file already exists
+        # if the file already exists
+        if(Test-Path -Path $newFileFullName)
+        {
+            $matchFileRegex = $newFileBaseName + "(.*)\.jpg";
+            # find count of files that starts the same
+            $matchFiles = @(Get-ChildItem -Path $newFilePath -File | Where-Object { $_.Name -match $matchFileRegex });
+            
+            # set fileName to - count + 1
+            $newFileBaseName = $newFileBaseName + "-" + ($matchFiles.Length + 1);
+            $newFileName = $newFileBaseName + $file.Extension;
+            $newFileFullName = $newFilePath + "\" + $newFileName;
+        }
 
         # copy file
         if($Operation -eq "Copy") {
             # write transaction output
-            Write-Host("{0} <-> {1}" -f $file.Name, $newFilePath);
+            Write-Host("{0} <-> {1}" -f $file.Name, $newFileFullName);
 
             # rename current file
-            $file =Rename-Item -Path $file.FullName -NewName $newFileName -PassThru;
+            $file = Rename-Item -Path $file.FullName -NewName $newFileName -PassThru;
             
             Copy-Item -Path $file.FullName -Destination $newFilePath;    
         }
         # move file
         elseif($Operation -eq "Move") {
             # write transaction output
-            Write-Host("{0} -> {1}" -f $file.Name, $newFilePath);
+            Write-Host("{0} -> {1}" -f $file.Name, $newFileFullName);
 
-            Move-Item -Path $file.FullName -Destination $newFilePath; 
+            Move-Item -Path $file.FullName -Destination $newFileFullName; 
         }
         # unknown operation value
         else {
