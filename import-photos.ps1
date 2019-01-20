@@ -6,13 +6,13 @@ param
     # "Copy" will rename the file in the Source Folder and Copy it with the new name to the destination
     [ValidateSet("Move","Copy")]
     [System.String] $Operation = "Copy",
-    [System.String] $SourceDateTimeSelector = "IMG_(.*)\.jpg",
+    [System.String] $SourceDateTimeSelector = "^IMG_(.*)\.jpg$",
     [System.String] $SourceDateTimeFormat = "yyyyMMdd_HHmmss"
 )
 
 
 $destinationDateTimeFormat = "yyyyMMdd-HHmmss";
-$destinationRegExFormat = "[0-9]{8}-[0-9]{6}(-[0-9]*)?\.jpg";
+$destinationRegExFormat = "^[0-9]{8}-[0-9]{6}(-[0-9]*)?\.jpg$";
 
 $failedFolder = $SourceFolder + "\Failed";
 
@@ -57,7 +57,7 @@ foreach($file in $files) {
         # if the file already exists
         if(Test-Path -Path $newFileFullName)
         {
-            $matchFileRegex = $newFileBaseName + "(.*)\.jpg";
+            $matchFileRegex = "^" + $newFileBaseName + "(.*)\.jpg$";
             # find count of files that starts the same
             $matchFiles = @(Get-ChildItem -Path $newFilePath -File | Where-Object { $_.Name -match $matchFileRegex });
             
