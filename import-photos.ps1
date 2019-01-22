@@ -35,7 +35,7 @@ if(-not (Test-Path -Path $DestinationFolder)) {
 }
 
 # get files in folder ordered by name ascending
-$files = @(Get-ChildItem -Path $SourceFolder -File | Sort-Object -Property FullName);
+$files = @(Get-ChildItem -Path $SourceFolder -File;
 
 # for each file in the folder
 foreach($file in $files) {
