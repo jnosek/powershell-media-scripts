@@ -5,11 +5,12 @@ param
     # "Move" will rename the file and move it to the destination
     # "Copy" will rename the file in the Source Folder and Copy it with the new name to the destination
     [ValidateSet("Move","Copy")]
-    [System.String] $Operation = "Copy",
-    [System.String] $SourceDateTimeSelector = "^IMG_([0-9]{8}_[0-9]{6})\.jpg$",
-    [System.String] $SourceDateTimeFormat = "yyyyMMdd_HHmmss"
+    [System.String] $Operation = "Copy"
 )
 
+$sourceFileTypeSelector = "*.jpg";
+$sourceDateTimeSelector = "^IMG_([0-9]{8}_[0-9]{6})\.jpg$";
+$sourceDateTimeFormat = "yyyyMMdd_HHmmss";
 
 $destinationDateTimeFormat = "yyyyMMdd-HHmmss";
 $destinationRegExFormat = "^[0-9]{8}-[0-9]{6}(-[0-9]*)?\.jpg$";
@@ -35,13 +36,13 @@ if(-not (Test-Path -Path $DestinationFolder)) {
 }
 
 # get files in folder ordered by name ascending
-$files = @(Get-ChildItem -Path $SourceFolder -File);
+$files = @(Get-ChildItem -Path $SourceFolder -File -Filter $sourceFileTypeSelector);
 
 # for each file in the folder
 foreach($file in $files) {
 
     # if the file name matches the selector
-    if($file.Name -match $SourceDateTimeSelector) {
+    if($file.Name -match $sourceDateTimeSelector) {
 
         # retrieve the date string selected by the expression
         $dateString = $Matches[1];
@@ -51,7 +52,7 @@ foreach($file in $files) {
         # if we can parse the datetime
         if([DateTime]::TryParseExact(
             $dateString, 
-            $SourceDateTimeFormat, 
+            $sourceDateTimeFormat, 
             [System.Globalization.CultureInfo]::InvariantCulture, 
             [System.Globalization.DateTimeStyles]::None,
             [ref] $dateValue))
