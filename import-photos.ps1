@@ -4,6 +4,10 @@ param
     $DestinationFolder = $(throw "-DestinationFolder is required."),
     # "Move" will rename the file and move it to the destination
     # "Copy" will rename the file in the Source Folder and Copy it with the new name to the destination
+    [ValidateSet("Android","iOS")]
+    $Platform = $(throw "-Platform is required."),
+    [ValidateSet("Photo","Video")]
+    $MediaType = $(throw "-MediaType is required."),
     [ValidateSet("Move","Copy")]
     [System.String] $Operation = "Copy"
 )
@@ -58,6 +62,41 @@ $androidVideoSource = [Source]::new(
     # IMG_########_######_#.jpg
     "^VID_([0-9]{8}_[0-9]{6})(?:_[0-9]*)?\.mp4$",
     "yyyyMMdd_HHmmss");
+
+$iOSPhotoSource_jpeg = [Source]::new(
+    $SourceFolder,
+    "*.jpeg",
+    # select files like:
+    # ####-##-##_##-##-##_###.jpeg
+    "^([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2})_[0-9]*\.jpeg$",
+    "yyyy-MM-dd_HH-mm-ss");
+
+$iOSPhotoSource_heic = [Source]::new(
+    $SourceFolder,
+    "*.heic",
+    # select files like:
+    # ####-##-##_##-##-##_###.jpeg
+    "^([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2})_[0-9]*\.heic$",
+    "yyyy-MM-dd_HH-mm-ss");
+
+$selectedSources = @($null);
+
+if($Platform -eq "Android") {
+    if($MediaType -eq "Photo") {
+        $selectedSources = @($androidImageSource);
+    }
+    elseif ($MediaType -eq "Video") {
+        $selectedSources = @($androidVideoSource);
+    }
+}
+elseif ($Platform -eq "iOS") {
+    if($MediaType -eq "Photo") {
+        $selectedSources = @($iOSPhotoSource_jpeg, $iOSPhotoSource_heic);
+    }
+    elseif($MediaType -eq "Video") {
+        throw "iOS Video Not Supported"
+    }
+}
 
 $destination = [PSCustomObject]@{
     Folder = $DestinationFolder;
@@ -169,6 +208,7 @@ if(-not (Test-Path -Path $destination.Folder)) {
     New-Item -Path $destination.Folder -ItemType Directory | Out-Null;
 }
 
-processSource($androidImageSource);
-
-processSource($androidVideoSource);
+# process each source
+foreach($source in $selectedSources) {
+    processSource($selectedSources);
+}
