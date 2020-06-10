@@ -1,3 +1,5 @@
+# process Android/iOS captured media using datetime values stored in filename
+[cmdletbinding(SupportsShouldProcess)]
 param 
 (
     $SourceFolder = ".", 
@@ -6,8 +8,6 @@ param
     # "Copy" will rename the file in the Source Folder and Copy it with the new name to the destination
     [ValidateSet("Android","iOS")]
     $Platform = $(throw "-Platform is required."),
-    [ValidateSet("Photo","Video")]
-    $MediaType = $(throw "-MediaType is required."),
     [ValidateSet("Move","Copy")]
     [System.String] $Operation = "Copy"
 )
@@ -111,7 +111,9 @@ function fileFailure($failedFile)
      # write transaction output
      Write-Host("! {0}" -f $failedFile.Name);
 
-     Move-Item -Path $failedFile.FullName -Destination $failedFolder;
+     if(-not $WhatIf) {
+        Move-Item -Path $failedFile.FullName -Destination $failedFolder;
+     }
 }
 
 function processSource([Source] $source) {
@@ -141,26 +143,26 @@ function processSource([Source] $source) {
                     # create a new basename off the datetime object
                     $dateValue.ToString([string] $destination.DateTimeFormat),
                     # build newFilePath with year and month
-                    $destination.Folder + $dateValue.Year.ToString() + "\" + $dateValue.Month.ToString("00")
+                    $destination.Folder + $dateValue.ToString("yyyy-MM")
                 );
 
                 # set file extension
                 $newFile.SetNameWithExtension($currentFile.Extension); 
 
                 # if directory does not exist create it
-                if(-not (Test-Path -Path $newFile.Path)) {
+                if(-not (WhatIf-Path -Path $newFile.Path)) {
                     New-Item -Path $newFile.Path -ItemType Directory | Out-Null;
                 }
 
                 # if the file already exists
-                if(Test-Path -Path $newFile.FullPath())
+                if(WhatIf-Path -Path $newFile.FullPath())
                 {
                     $matchFileRegex = "^" + $newFile.BaseName + "(.*)\.jpg$";
                     # find count of files that starts the same
                     $matchFiles = @(Get-ChildItem -Path $newFile.Path -File | Where-Object { $_.Name -match $matchFileRegex });
                     
                     # set fileName to - count + 1
-                    $newFile.BaseName = $newFile.BaseName + "-" + ($matchFiles.Length + 1);
+                    $newFile.BaseName = $newFile.BaseName + "_" + ($matchFiles.Length + 1);
                     $newFile.SetNameWithExtension($currentFile.Extension);
                 }
 
@@ -172,19 +174,29 @@ function processSource([Source] $source) {
                     # rename current file
                     $currentFile = Rename-Item -Path $currentFile.FullName -NewName $newFile.Name -PassThru;
                     
-                    Copy-Item -Path $currentFile.FullName -Destination $newFile.Path;    
+                    # perform operation if not test
+                    if(-not $WhatIf) {
+                        Copy-Item -Path $currentFile.FullName -Destination $newFile.Path;    
+                    }
                 }
                 # move file
                 elseif($Operation -eq "Move") {
                     # write transaction output
                     Write-Host("{0} -> {1}" -f $currentFile.Name, $newFile.FullPath());
 
-                    Move-Item -Path $currentFile.FullName -Destination $newFile.FullPath(); 
+                    # perform operation if not test
+                    if(-not $WhatIf) {
+                        Move-Item -Path $currentFile.FullName -Destination $newFile.FullPath(); 
+                    }
                 }
                 # unknown operation value
                 else {
                     throw ("Unknown Operation Value: {0}" -f $Operation);
                 }
+            }
+            # else, filename does not match format
+            else {
+                
             }      
         }
         # else, if the filename matches our destination format
@@ -199,16 +211,19 @@ function processSource([Source] $source) {
 }
 
 # if failed folder does not exist, create it
-if(-not (Test-Path -Path $failedFolder)) {
+if(-not (WhatIf-Path -Path $failedFolder)) {
     New-Item -Path $failedFolder -ItemType Directory | Out-Null;
 }
 
 # if destination does not exist, create it
-if(-not (Test-Path -Path $destination.Folder)) {
+if(-not (WhatIf-Path -Path $destination.Folder)) {
     New-Item -Path $destination.Folder -ItemType Directory | Out-Null;
 }
 
+# change to process each file, and check for each source
 # process each source
 foreach($source in $selectedSources) {
     processSource($selectedSources);
 }
+
+# if copying, save last file processed state
