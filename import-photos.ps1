@@ -14,8 +14,7 @@ param
 )
 
 Import-Module .\PlatformExpressions.psm1 -Scope Local
-
-$standardDateTimeFormat = "yyyyMMdd-HHmmss";
+Import-Module .\FileOperations.psm1 -Scope Local
 
 # validate parameters
 
@@ -30,25 +29,6 @@ class Source {
         $this.FileTypeSelector = $fileType;
         $this.DateTimeRegex = $dateTimeRegex;
         $this.DateTimeFormat = $dateTimeFormat;
-    }
-}
-
-class NewFile {
-    [string] $BaseName;
-    [string] $Name;
-    [string] $Path;
-
-    NewFile($baseName, $path) {
-        $this.BaseName = $baseName;
-        $this.Path = $path;
-    }
-
-    [string] FullPath() {
-        return $this.Path + "\" + $this.Name;
-    }
-
-    [void] SetNameWithExtension([string] $ext) {
-        $this.Name = $this.BaseName + $ext;
     }
 }
 
@@ -98,6 +78,8 @@ function processFile([System.IO.FileSystemInfo] $file)
                 $Matches["hour"],
                 $Matches["minute"],
                 $Matches["second"]);
+
+                $newFile = Create-NewMediaFile $file $dateValue $destination
 
             break;
         }
