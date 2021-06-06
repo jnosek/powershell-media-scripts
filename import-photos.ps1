@@ -1,16 +1,23 @@
 param 
 (
     $SourceFolder = ".", 
-    $DestinationFolder = $(throw "-DestinationFolder is required."),
-    # "Move" will rename the file and move it to the destination
-    # "Copy" will rename the file in the Source Folder and Copy it with the new name to the destination
-    [ValidateSet("Android","iOS")]
-    $Platform = $(throw "-Platform is required."),
-    [ValidateSet("Photo","Video")]
+    $DestinationFolder = $null,
+    [ValidateSet("All","Default","Android","iOS")]
+    $MediaGroup = $(throw "-MediaGroup is required."),
+    [ValidateSet("All","Photo","MovingPhoto", "Screenshot","Video")]
     $MediaType = $(throw "-MediaType is required."),
-    [ValidateSet("Move","Copy")]
+    # "Move" will rename the file and move it to the Destination Folder
+    # "Copy" will rename the file in the Source Folder and Copy it with the new name to the Destination Folder
+    # "Rename will rename the file in the Source Folder and not apply any changes to the Destination Folder"
+    [ValidateSet("Move","Copy","Rename")]
     [System.String] $Operation = "Copy"
 )
+
+Import-Module .\PlatformExpressions.psm1
+
+$standardDateTimeFormat = "yyyyMMdd-HHmmss";
+
+# validate parameters
 
 class Source {
     [string] $Folder;
@@ -45,63 +52,17 @@ class NewFile {
     }
 }
 
-$androidImageSource = [Source]::new(
-    $SourceFolder,
-    "*.jpg",
-    # select files like:
-    # IMG_########_######.jpg
-    # IMG_########_######_#.jpg
-    "^IMG_([0-9]{8}_[0-9]{6})(?:_[0-9]*)?\.jpg$",
-    "yyyyMMdd_HHmmss");
-
-$androidVideoSource = [Source]::new(
-    $SourceFolder,
-    "*.mp4",
-    # select files like:
-    # IMG_########_######.jpg
-    # IMG_########_######_#.jpg
-    "^VID_([0-9]{8}_[0-9]{6})(?:_[0-9]*)?\.mp4$",
-    "yyyyMMdd_HHmmss");
-
-$iOSPhotoSource_jpeg = [Source]::new(
-    $SourceFolder,
-    "*.jpeg",
-    # select files like:
-    # ####-##-##_##-##-##_###.jpeg
-    "^([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2})_[0-9]*\.jpeg$",
-    "yyyy-MM-dd_HH-mm-ss");
-
-$iOSPhotoSource_heic = [Source]::new(
-    $SourceFolder,
-    "*.heic",
-    # select files like:
-    # ####-##-##_##-##-##_###.jpeg
-    "^([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2})_[0-9]*\.heic$",
-    "yyyy-MM-dd_HH-mm-ss");
+$defaultExpressions = Get-DefaultExpressions;
+$searchExpressions = $null;
 
 $selectedSources = @($null);
 
-if($Platform -eq "Android") {
-    if($MediaType -eq "Photo") {
-        $selectedSources = @($androidImageSource);
-    }
-    elseif ($MediaType -eq "Video") {
-        $selectedSources = @($androidVideoSource);
-    }
+if($MediaGroup -eq "Android") {
+    $searchExpressions = Get-AndroidExpressions
+    
 }
-elseif ($Platform -eq "iOS") {
-    if($MediaType -eq "Photo") {
-        $selectedSources = @($iOSPhotoSource_jpeg, $iOSPhotoSource_heic);
-    }
-    elseif($MediaType -eq "Video") {
-        throw "iOS Video Not Supported"
-    }
-}
-
-$destination = [PSCustomObject]@{
-    Folder = $DestinationFolder;
-    DateTimeFormat = "yyyyMMdd-HHmmss";
-    RegExFormat = "^[0-9]{8}-[0-9]{6}(-[0-9]*)?\.jpg$";
+elseif ($MediaGroup -eq "iOS") {
+    $searchExpressions = Get-iOSExpressions
 }
 
 $failedFolder = $source.Folder + "\Failed";
@@ -112,6 +73,38 @@ function fileFailure($failedFile)
      Write-Host("! {0}" -f $failedFile.Name);
 
      Move-Item -Path $failedFile.FullName -Destination $failedFolder;
+}
+
+function processFile([System.IO.FileSystemInfo] $file) 
+{
+    # if file matches default
+    foreach($expression in $defaultExpressions)
+    {
+        if($file.Name -match $expression.Expression) {
+
+            # check to see how to process already processed files
+
+            break;
+        }
+    }
+
+    # check to see if file matches a search expression
+    foreach($expression in $searchExpressions) {
+        if($file.Name -match $expression.Expression) {
+            [DateTime] $dateValue = New-Object DateTime @(
+                $Matches["year"],
+                $Matches["month"],
+                $Matches["date"],
+                $Matches["hour"],
+                $Matches["minute"],
+                $Matches["second"]);
+
+            break;
+        }
+    }
+
+    # else the file is not a match
+
 }
 
 function processSource([Source] $source) {
@@ -208,7 +201,10 @@ if(-not (Test-Path -Path $destination.Folder)) {
     New-Item -Path $destination.Folder -ItemType Directory | Out-Null;
 }
 
-# process each source
-foreach($source in $selectedSources) {
-    processSource($selectedSources);
+# get files in folder ordered by name ascending
+$files = @(Get-ChildItem -Path $SourceFolder -File);
+
+# process each file in source
+foreach($file in $files) {
+    processFile -file $file;
 }
