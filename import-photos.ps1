@@ -13,7 +13,7 @@ param
     [System.String] $Operation = "Copy"
 )
 
-Import-Module .\PlatformExpressions.psm1
+Import-Module .\PlatformExpressions.psm1 -Scope Local
 
 $standardDateTimeFormat = "yyyyMMdd-HHmmss";
 
@@ -58,11 +58,11 @@ $searchExpressions = $null;
 $selectedSources = @($null);
 
 if($MediaGroup -eq "Android") {
-    $searchExpressions = Get-AndroidExpressions
+    $searchExpressions = Get-AndroidExpressions;
     
 }
 elseif ($MediaGroup -eq "iOS") {
-    $searchExpressions = Get-iOSExpressions
+    $searchExpressions = Get-iOSExpressions;
 }
 
 $failedFolder = $source.Folder + "\Failed";

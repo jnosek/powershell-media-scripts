@@ -10,7 +10,7 @@ class MediaExpression {
     [string] $Expression;
     [MediaType] $MediaType;
 
-    Source($name, $expression, $mediaType){
+    MediaExpression($name, $expression, $mediaType){
         $this.Name = $name;
         $this.Expression = $expression;
         $this.MediaType = $mediaType;
@@ -22,11 +22,11 @@ Returns the default expression for already processed files
 #>
 function Get-DefaultExpressions
 {
-    $exps = @(
+   $exps = @(
         [MediaExpression]::new(  
             "Default",
             "^(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})-(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})\.(?<ext>[a-z|A-Z]+)$",
-            [MedaType]::Photo)
+            [MediaType]::Photo)
     );
 
     return $exps;
@@ -34,7 +34,7 @@ function Get-DefaultExpressions
 
 function Get-AndroidExpressions
 {
-    return @(
+    $exps = @(
         # default Android photo format legacy and current:
         # 
         # Legacy:  IMG_20190607_110809.jpg
@@ -44,7 +44,7 @@ function Get-AndroidExpressions
             "AndroidDefaultPhoto",
             # include exclusion of MP.jpg
             "^[a-z|A-z]{3}_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*(?:.(?!MP)[a-z|A-z]*)*\.(?<ext>jpg)$",
-            [MedaType]::Photo),
+            [MediaType]::Photo),
 
         # current Android moving photo format:
         # 
@@ -52,7 +52,7 @@ function Get-AndroidExpressions
         [MediaExpression]::new(    
             "AndroidCurrentMovingPhoto",
             "^[a-z|A-z]+_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.MP.(?<ext>jpg)$",
-            [MedaType]::MovingPhoto),
+            [MediaType]::MovingPhoto),
 
         # legacy Android moving photo format:
         # 
@@ -60,7 +60,7 @@ function Get-AndroidExpressions
         [MediaExpression]::new(    
             "AndroidLegacyMovingPhoto",
             "^MV[a-z|A-z]{3}_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.MP.(?<ext>jpg)$",
-            [MedaType]::MovingPhoto),
+            [MediaType]::MovingPhoto),
 
         # default Android video format legacy and current:
         # 
@@ -69,7 +69,7 @@ function Get-AndroidExpressions
         [MediaExpression]::new(    
             "AndroidDefaultVideo",
             "^[a-z|A-z]{3}_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*(?:.[a-z|A-z]*)*\.(?<ext>mp4)$",
-            [MedaType]::MovingPhoto),
+            [MediaType]::MovingPhoto),
         
         # default Android screenshot format:
         # 
@@ -77,8 +77,10 @@ function Get-AndroidExpressions
         [MediaExpression]::new(    
             "AndroidDefaultVideo",
             "^Screenshot_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})-(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.(?<ext>png)$",
-            [MedaType]::Screenshot)        
+            [MediaType]::Screenshot)        
     );
+
+    return $exps;
 }
 
 function Get-iOSExpressions
