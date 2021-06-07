@@ -1,3 +1,4 @@
+[CmdletBinding(SupportsShouldProcess)]
 param 
 (
     $SourceFolder = ".", 
@@ -34,8 +35,6 @@ class Source {
 
 $defaultExpressions = Get-DefaultExpressions;
 $searchExpressions = $null;
-
-$selectedSources = @($null);
 
 if($MediaGroup -eq "Android") {
     $searchExpressions = Get-AndroidExpressions;
@@ -79,7 +78,9 @@ function processFile([System.IO.FileSystemInfo] $file)
                 $Matches["minute"],
                 $Matches["second"]);
 
-                $newFile = Create-NewMediaFile $file $dateValue $destination
+                $newFile = New-MediaFile $file $dateValue
+
+                $newFile.PerformOperation($Operation, $destination);
 
             break;
         }

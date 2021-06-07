@@ -1,42 +1,68 @@
 
-$dateTimeFileNameFormat = "yyyyMMdd-HHmmss";
 
-class NewFile {
+class MediaFile {
+    [System.IO.FileSystemInfo] $CurrentFile;
+    [string] $Name;
     [string] $NewPath;
     [string] $NewFullName;
     [DateTime] $DateTime;
-    [string] $Name;
-    [string] $CurrentFullName;
+    
+    MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime) {
+        $dateTimeFileNameFormat = "yyyyMMdd-HHmmss";
 
-    NewFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime, $basePath) {
-        $this.CurrentFullName = $currentFile.FullName;
-        $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + "." + $currentFile.Extension;
-        $this.NewPath = $basePath + "\" + $dateTime.Year.ToString() + "\" + $dateTime.Month.ToString("00") 
+        $this.CurrentFile = $currentFile;
+        $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + $currentFile.Extension;
+        $this.NewPath = $dateTime.Year.ToString() + "\" + $dateTime.Month.ToString("00") + "\";
         $this.NewFullName = $this.NewPath + $this.Name;
         $this.DateTime = $dateTime;
     }
 
-    [void] Copy() {
-        # if directory does not exist create it
-        if(-not (Test-Path -Path $this.NewPath)) {
-            New-Item -Path $this.NewPath -ItemType Directory | Out-Null;
+    [void] PerformOperation($operation, $basePath) {
+        switch($operation)
+        {
+            "Move" { $this.Move($basePath) }
+            "Copy" { $this.Copy($basePath) }
         }
     }
 
-    [void] Move() {
-        # if directory does not exist create it
-        if(-not (Test-Path -Path $this.NewPath)) {
-            New-Item -Path $this.NewPath -ItemType Directory | Out-Null;
+    [void] CheckDestination($path) {
+        if($PSCmdlet.ShouldProcess($this.CurrentFile.Name)) {
+            # if directory does not exist create it
+            if(-not (Test-Path -Path $path)) {
+                New-Item -Path $path -ItemType Directory | Out-Null;
+            }
         }
+    }
 
-        $this.Name = $this.BaseName + $ext;
+    [void] Copy($basePath) {
+        $newFullPath = $basePath + "\" + $this.NewPath; 
+
+        $this.CheckDestination($newFullPath);
+
+        Write-Host("{0} <-> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
+
+        if($PSCmdlet.ShouldProcess($this.CurrentFile.Name)) {
+            Copy-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName;
+        }
+    }
+
+    [void] Move($basePath) {
+        $newFullPath = $basePath + "\" + $this.NewPath; 
+
+        $this.CheckDestination($newFullPath);
+
+        Write-Host("{0} -> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
+        
+        if($PSCmdlet.ShouldProcess($this.CurrentFile.Name)) {
+            Move-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName; 
+        }
     }
 }
 
-function Create-NewMediaFile([System.IO.FileSystemInfo] $currentFile,  [DateTime] $dateTime, $basePath)
+function New-MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime)
 {
-    return [NewFile]::new( );
+    return [MediaFile]::new($currentFile, $dateTime);
 }
 
 
-Export-ModuleMember -Function Create-NewMediaFile
+Export-ModuleMember -Function New-MediaFile
