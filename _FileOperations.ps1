@@ -78,11 +78,11 @@ class MediaFile {
     }
 
     [void] Move($basePath, [MediaOperationSettings] $settings) {
-        $destinationFileFullName = $basePath + "\" + $this.DestinationFolderName;
+        $destinationFileFullName = $basePath + $this.DestinationFolderName;
 
         $this.CheckDestination($destinationFileFullName);
 
-        $destinationFileFullName = $destinationFileFullName + $this.DestinationFileName;
+        $destinationFileFullName = $basePath + $this.DestinationFileName;
 
         # check for duplicates
         if(Test-Path -Path $destinationFileFullName)
