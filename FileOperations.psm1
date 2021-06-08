@@ -8,27 +8,29 @@ class MediaOperationSettings {
 }
 
 class MediaFile {
-    [System.IO.FileSystemInfo] $CurrentFile;
-    [string] $Name;
-    [string] $NewPath;
-    [string] $NewFullName;
-    [DateTime] $DateTime;
+    [string] $SourceFileFullName;
+    [string] $DestinationFolderName;
+    [string] $DestinationFileName;
     
-    MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime, $mediaExpression) {
+    MediaFile([System.IO.FileSystemInfo] $sourceFile, [DateTime] $dateTime, $mediaExpression) {
         $dateTimeFileNameFormat = "yyyyMMdd-HHmmss";
 
-        $this.CurrentFile = $currentFile;
-
-        # special case, for Android Moving Photos, want to keep .MP.jpg extension
-        if($mediaExpression.Name -eq "AndroidCurrentMovingPhoto" -or $mediaExpression.Name -eq "AndroidLegacyMovingPhoto") {
-            $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + ".MP" + $currentFile.Extension;
-        } else {
-            $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + $currentFile.Extension;
-        }
+        $this.SourceFileFullName = $sourceFile.FullName;
         
-        $this.NewPath = $dateTime.Year.ToString() + "\" + $dateTime.Month.ToString("00") + "\";
-        $this.NewFullName = $this.NewPath + $this.Name;
-        $this.DateTime = $dateTime;
+        # set destination datetime folder structure
+        $this.DestinationFolderName = "\" + $dateTime.Year.ToString() + "\" + $dateTime.Month.ToString("00") + "\";
+
+        # handle default (already processed files) without changing file name (incase of MP or other designations)
+        if($mediaExpression.Name -eq "Default") {
+            $this.DestinationFileName = $this.DestinationFolderName + $sourceFile.Name;
+        }
+        # special case, for Android Moving Photos, want to keep .MP.jpg extension
+        elseif($mediaExpression.Name -eq "AndroidCurrentMovingPhoto" -or $mediaExpression.Name -eq "AndroidLegacyMovingPhoto") {
+            $this.DestinationFileName =  $this.DestinationFolderName + $dateTime.ToString($dateTimeFileNameFormat) + ".MP" + $sourceFile.Extension;
+        } 
+        else {
+            $this.DestinationFileName =  $this.DestinationFolderName + $dateTime.ToString($dateTimeFileNameFormat) + $sourceFile.Extension;
+        }
     }
 
     [void] PerformOperation($operation, $basePath, [MediaOperationSettings] $settings) {
@@ -50,7 +52,7 @@ class MediaFile {
         if(Test-Path -Path $path){
             if($null -ne $settings.DuplicateFolder) {
                 CheckDestination($settings.DuplicateFolder);
-                Move-Item -Path $this.CurrentFile.FullName -Destination $settings.DuplicateFolder;
+                Move-Item -Path $this.SourceFileFullName -Destination $settings.DuplicateFolder;
             }
 
             return $true
@@ -60,28 +62,32 @@ class MediaFile {
     }
 
     [void] Copy($basePath, [MediaOperationSettings] $settings) {
-        $newFullPath = $basePath + "\" + $this.NewPath; 
+        $destinationFileFullName = $basePath + "\" + $this.DestinationFolderName;
 
-        $this.CheckDestination($newFullPath);
+        $this.CheckDestination($destinationFileFullName);
 
-        if(-not $this.IsDuplicateFound($newFullPath, $settings))
+        $destinationFileFullName = $destinationFileFullName + $this.DestinationFileName;
+
+        if(-not $this.IsDuplicateFound($destinationFileFullName, $settings))
         {
-            Write-Host("{0} <-> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
+            Write-Host "$($this.SourceFileFullName) <-> $destinationFileFullName";
 
-            Copy-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName;
+            Copy-Item -Path $this.SourceFileFullName -Destination $destinationFileFullName;
         }
     }
 
     [void] Move($basePath, [MediaOperationSettings] $settings) {
-        $newFullPath = $basePath + "\" + $this.NewPath; 
+        $destinationFileFullName = $basePath + "\" + $this.DestinationFolderName;
 
-        $this.CheckDestination($newFullPath);
+        $this.CheckDestination($destinationFileFullName);
 
-        if(-not $this.IsDuplicateFound($newFullPath, $settings))
+        $destinationFileFullName = $destinationFileFullName + $this.DestinationFileName;
+
+        if(-not $this.IsDuplicateFound($destinationFileFullName, $settings))
         {
-            Write-Host("{0} -> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
+            Write-Host "$($this.SourceFileFullName)  -> $destinationFileFullName";
             
-            Move-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName;
+            Move-Item -Path $this.SourceFileFullName -Destination $destinationFileFullName;
         }
     }
 }
@@ -91,9 +97,9 @@ function New-MediaOperationSettings([string] $duplicateFolder)
     return [MediaOperationSettings]::new($duplicateFolder);
 }
 
-function New-MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime)
+function New-MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime, $mediaExpression)
 {
-    return [MediaFile]::new($currentFile, $dateTime);
+    return [MediaFile]::new($currentFile, $dateTime, $mediaExpression);
 }
 
 Export-ModuleMember -Function New-MediaFile

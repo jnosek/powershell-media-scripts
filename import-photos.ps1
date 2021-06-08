@@ -12,7 +12,8 @@ param
     # "Rename will rename the file in the Source Folder and not apply any changes to the Destination Folder"
     [ValidateSet("Move","Copy","Rename")]
     [string] $Operation = "Copy",
-    [string] $DuplicateFolder = $null
+    [string] $DuplicateFolder = $null,
+    [switch] $IgnoreProcessedFiles
  )
 
 Import-Module .\PlatformExpressions.psm1 -Scope Local
@@ -47,9 +48,25 @@ function processFile([System.IO.FileSystemInfo] $file)
     {
         if($file.Name -match $expression.Expression) {
 
-            # check to see how to process already processed files
+                # check to see how to process already processed files
+                if($IgnoreProcessedFiles) {
+                    Write-Host "Ignoring $($file.Name)";
+                }
+                else {
+                    [DateTime] $dateValue = New-Object DateTime @(
+                    $Matches["year"],
+                    $Matches["month"],
+                    $Matches["date"],
+                    $Matches["hour"],
+                    $Matches["minute"],
+                    $Matches["second"]);
 
-            break;
+                    $newFile = New-MediaFile $file $dateValue $expression
+
+                    $newFile.PerformOperation($Operation, $DestinationFolder, $operationSettings);
+                }
+
+            return;
         }
     }
 
@@ -64,16 +81,16 @@ function processFile([System.IO.FileSystemInfo] $file)
                 $Matches["minute"],
                 $Matches["second"]);
 
-                $newFile = New-MediaFile $file $dateValue
+                $newFile = New-MediaFile $file $dateValue $expression
 
                 $newFile.PerformOperation($Operation, $DestinationFolder, $operationSettings);
 
-            break;
+            return;
         }
     }
 
     # else the file is not a match
-
+    Write-Host "Skipping $($file.Name)";
 }
 
 # get files in folder ordered by name ascending

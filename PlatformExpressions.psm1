@@ -25,7 +25,7 @@ function Get-DefaultExpressions
    $exps = @(
         [MediaExpression]::new(  
             "Default",
-            "^(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})-(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})\.(?<ext>[a-z|A-Z]+)$",
+            "^(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})-(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})(?:\.[a-z|A-z]*)?\.(?<ext>[a-z|A-Z]+)$",
             [MediaType]::Photo)
     );
 
