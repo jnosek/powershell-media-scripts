@@ -62,11 +62,11 @@ class MediaFile {
     }
 
     [void] Copy($basePath, [MediaOperationSettings] $settings) {
-        $destinationFileFullName = $basePath + "\" + $this.DestinationFolderName;
+        $destinationFileFullName = $basePath + $this.DestinationFolderName;
 
         $this.CheckDestination($destinationFileFullName);
 
-        $destinationFileFullName = $destinationFileFullName + $this.DestinationFileName;
+        $destinationFileFullName = $basePath + $this.DestinationFileName;
 
         if(-not $this.IsDuplicateFound($destinationFileFullName, $settings))
         {
@@ -101,6 +101,3 @@ function New-MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $date
 {
     return [MediaFile]::new($currentFile, $dateTime, $mediaExpression);
 }
-
-Export-ModuleMember -Function New-MediaFile
-Export-ModuleMember -Function New-MediaOperationSettings

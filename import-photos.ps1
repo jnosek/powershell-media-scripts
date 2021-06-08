@@ -16,8 +16,8 @@ param
     [switch] $IgnoreProcessedFiles
  )
 
-Import-Module .\PlatformExpressions.psm1 -Scope Local
-Import-Module .\FileOperations.psm1 -Scope Local
+ . "$PSScriptRoot\_PlatformExpressions.ps1"
+ . "$PSScriptRoot\_FileOperations.ps1"
 
 # validate parameters
 

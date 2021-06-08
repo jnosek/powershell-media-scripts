@@ -87,7 +87,3 @@ function Get-iOSExpressions
 {
     
 }
-
-Export-ModuleMember -Function Get-DefaultExpressions
-Export-ModuleMember -Function Get-AndroidExpressions
-Export-ModuleMember -Function Get-iOSExpressions
