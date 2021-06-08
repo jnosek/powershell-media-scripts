@@ -1,4 +1,11 @@
 
+class MediaOperationSettings {
+    [string] $DuplicateFolder;
+
+    MediaOperationSettings([string] $duplicateFolder = $null) {
+        $this.DuplicateFolder = $duplicateFolder;
+    }
+}
 
 class MediaFile {
     [System.IO.FileSystemInfo] $CurrentFile;
@@ -17,46 +24,64 @@ class MediaFile {
         $this.DateTime = $dateTime;
     }
 
-    [void] PerformOperation($operation, $basePath) {
+    [void] PerformOperation($operation, $basePath, [MediaOperationSettings] $settings) {
         switch($operation)
         {
-            "Move" { $this.Move($basePath) }
-            "Copy" { $this.Copy($basePath) }
+            "Move" { $this.Move($basePath, $settings) }
+            "Copy" { $this.Copy($basePath, $settings) }
         }
     }
 
     [void] CheckDestination($path) {
-        if($PSCmdlet.ShouldProcess($this.CurrentFile.Name)) {
-            # if directory does not exist create it
-            if(-not (Test-Path -Path $path)) {
-                New-Item -Path $path -ItemType Directory | Out-Null;
-            }
+        # if directory does not exist create it
+        if(-not (Test-Path -Path $path)) {
+            New-Item -Path $path -ItemType Directory | Out-Null;
         }
     }
 
-    [void] Copy($basePath) {
+    [bool] IsDuplicateFound([string] $path, [MediaOperationSettings] $settings) {
+        if(Test-Path -Path $path){
+            if($null -ne $settings.DuplicateFolder) {
+                CheckDestination($settings.DuplicateFolder);
+                Move-Item -Path $this.CurrentFile.FullName -Destination $settings.DuplicateFolder;
+            }
+
+            return $true
+        }
+
+        return $false;
+    }
+
+    [void] Copy($basePath, [MediaOperationSettings] $settings) {
         $newFullPath = $basePath + "\" + $this.NewPath; 
 
         $this.CheckDestination($newFullPath);
 
-        Write-Host("{0} <-> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
+        if(-not $this.IsDuplicateFound($newFullPath, $settings))
+        {
+            Write-Host("{0} <-> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
 
-        if($PSCmdlet.ShouldProcess($this.CurrentFile.Name)) {
             Copy-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName;
         }
     }
 
-    [void] Move($basePath) {
+    [void] Move($basePath, [MediaOperationSettings] $settings) {
         $newFullPath = $basePath + "\" + $this.NewPath; 
 
         $this.CheckDestination($newFullPath);
 
-        Write-Host("{0} -> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
-        
-        if($PSCmdlet.ShouldProcess($this.CurrentFile.Name)) {
-            Move-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName; 
+        if(-not $this.IsDuplicateFound($newFullPath, $settings))
+        {
+            Write-Host("{0} -> {1}" -f $this.CurrentFile.Name, $this.NewFullName);
+            
+            Move-Item -Path $this.CurrentFile.FullName -Destination $this.NewFullName;
         }
     }
+}
+
+function New-MediaOperationSettings([string] $duplicateFolder)
+{
+    return [MediaOperationSettings]::new($duplicateFolder);
 }
 
 function New-MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime)
@@ -64,5 +89,5 @@ function New-MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $date
     return [MediaFile]::new($currentFile, $dateTime);
 }
 
-
 Export-ModuleMember -Function New-MediaFile
+Export-ModuleMember -Function New-MediaOperationSettings
