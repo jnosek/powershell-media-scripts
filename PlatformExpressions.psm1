@@ -51,7 +51,7 @@ function Get-AndroidExpressions
         # Current: PXL_20210312_183124373.MP.jpg
         [MediaExpression]::new(    
             "AndroidCurrentMovingPhoto",
-            "^[a-z|A-z]+_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.MP.(?<ext>jpg)$",
+            "^[a-z|A-z]+_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.MP\.(?<ext>jpg)$",
             [MediaType]::MovingPhoto),
 
         # legacy Android moving photo format:
@@ -59,7 +59,7 @@ function Get-AndroidExpressions
         # legacy: MPIMG_20210312_183124.jpg
         [MediaExpression]::new(    
             "AndroidLegacyMovingPhoto",
-            "^MV[a-z|A-z]{3}_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.MP.(?<ext>jpg)$",
+            "^MV[a-z|A-z]{3}_(?<year>[0-9]{4})(?<month>[0-9]{2})(?<date>[0-9]{2})_(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{2})[0-9]*\.(?<ext>jpg)$",
             [MediaType]::MovingPhoto),
 
         # default Android video format legacy and current:

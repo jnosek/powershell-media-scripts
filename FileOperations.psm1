@@ -14,11 +14,18 @@ class MediaFile {
     [string] $NewFullName;
     [DateTime] $DateTime;
     
-    MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime) {
+    MediaFile([System.IO.FileSystemInfo] $currentFile, [DateTime] $dateTime, $mediaExpression) {
         $dateTimeFileNameFormat = "yyyyMMdd-HHmmss";
 
         $this.CurrentFile = $currentFile;
-        $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + $currentFile.Extension;
+
+        # special case, for Android Moving Photos, want to keep .MP.jpg extension
+        if($mediaExpression.Name -eq "AndroidCurrentMovingPhoto" -or $mediaExpression.Name -eq "AndroidLegacyMovingPhoto") {
+            $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + ".MP" + $currentFile.Extension;
+        } else {
+            $this.Name = $dateTime.ToString($dateTimeFileNameFormat) + $currentFile.Extension;
+        }
+        
         $this.NewPath = $dateTime.Year.ToString() + "\" + $dateTime.Month.ToString("00") + "\";
         $this.NewFullName = $this.NewPath + $this.Name;
         $this.DateTime = $dateTime;
