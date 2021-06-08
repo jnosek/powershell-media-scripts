@@ -48,19 +48,6 @@ class MediaFile {
         }
     }
 
-    [bool] IsDuplicateFound([string] $path, [MediaOperationSettings] $settings) {
-        if(Test-Path -Path $path){
-            if($null -ne $settings.DuplicateFolder) {
-                CheckDestination($settings.DuplicateFolder);
-                Move-Item -Path $this.SourceFileFullName -Destination $settings.DuplicateFolder;
-            }
-
-            return $true
-        }
-
-        return $false;
-    }
-
     [void] Copy($basePath, [MediaOperationSettings] $settings) {
         $destinationFileFullName = $basePath + $this.DestinationFolderName;
 
@@ -68,7 +55,21 @@ class MediaFile {
 
         $destinationFileFullName = $basePath + $this.DestinationFileName;
 
-        if(-not $this.IsDuplicateFound($destinationFileFullName, $settings))
+        # check for duplicates
+        if(Test-Path -Path $destinationFileFullName)
+        {
+            if($null -ne $settings.DuplicateFolder) {
+                $this.CheckDestination($settings.DuplicateFolder);               
+
+                Write-Host "[DUPLICATE] $($this.SourceFileFullName) <-> $($settings.DuplicateFolder)";
+
+                Copy-Item -Path $this.SourceFileFullName -Destination $settings.DuplicateFolder;
+            }
+            else {
+                Write-Host "[DUPLICATE] $($this.SourceFileFullName)";
+            }
+        }
+        else
         {
             Write-Host "$($this.SourceFileFullName) <-> $destinationFileFullName";
 
@@ -83,7 +84,21 @@ class MediaFile {
 
         $destinationFileFullName = $destinationFileFullName + $this.DestinationFileName;
 
-        if(-not $this.IsDuplicateFound($destinationFileFullName, $settings))
+        # check for duplicates
+        if(Test-Path -Path $destinationFileFullName)
+        {
+            if($null -ne $settings.DuplicateFolder) {
+                $this.CheckDestination($settings.DuplicateFolder);
+
+                Write-Host "[DUPLICATE] $($this.SourceFileFullName)  -> $($settings.DuplicateFolder)";
+
+                Move-Item -Path $this.SourceFileFullName -Destination $settings.DuplicateFolder;
+            }
+            else {
+                Write-Host "[DUPLICATE] $($this.SourceFileFullName)";
+            }
+        }
+        else
         {
             Write-Host "$($this.SourceFileFullName)  -> $destinationFileFullName";
             
